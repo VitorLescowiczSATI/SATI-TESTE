@@ -32,6 +32,18 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.get("/", tags=["infra"])
+    def root() -> dict[str, str]:
+        return {
+            "status": "ok",
+            "service": settings.app_name,
+            "message": "SATI IA API online",
+            "health": "/health",
+            "docs": "/docs",
+            "api": settings.api_prefix,
+            "frontend": settings.frontend_url,
+        }
+
     @app.get("/health", tags=["infra"])
     def healthcheck() -> dict[str, str]:
         return {

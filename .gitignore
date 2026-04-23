@@ -1,0 +1,34 @@
+# Workspace references and one-off scripts
+Sati Design System/
+runtime-operacional-sati.html
+*.ps1
+*.log
+
+# Node / frontend
+**/node_modules/
+**/dist/
+**/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Python / backend
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/*.pyc
+
+# Local environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Editors / OS
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini

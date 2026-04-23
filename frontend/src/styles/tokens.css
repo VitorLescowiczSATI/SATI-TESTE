@@ -1,0 +1,180 @@
+/* =========================================================
+   SATI IA — Design System Tokens
+   Light-first B2B, com dark/gradient como linguagem de marca
+   ========================================================= */
+
+:root {
+  /* --- Tweakable roots (editable via Tweaks panel) --- */
+  --brand-primary-h: 252;      /* hue (roxo 252 / teal 172) */
+  --brand-primary-s: 83%;
+  --brand-primary-l: 58%;
+  --radius-scale: 1;           /* multiplicador global */
+  --density-scale: 1;          /* multiplicador de spacing */
+
+  /* --- Neutrals (slate, levemente cool) --- */
+  --ink-0:  #ffffff;
+  --ink-25: #fafbfc;
+  --ink-50: #f5f6f8;
+  --ink-75: #eef0f4;
+  --ink-100:#e4e7ec;
+  --ink-150:#d3d8e0;
+  --ink-200:#c0c6d0;
+  --ink-300:#9aa3b2;
+  --ink-400:#6b7486;
+  --ink-500:#4a5160;
+  --ink-600:#353b48;
+  --ink-700:#242934;
+  --ink-800:#171a22;
+  --ink-900:#0d1018;
+
+  /* --- Brand primary (derived from tweakable HSL) --- */
+  --brand: hsl(var(--brand-primary-h) var(--brand-primary-s) var(--brand-primary-l));
+  --brand-50:  hsl(var(--brand-primary-h) 90% 97%);
+  --brand-100: hsl(var(--brand-primary-h) 85% 94%);
+  --brand-200: hsl(var(--brand-primary-h) 80% 88%);
+  --brand-300: hsl(var(--brand-primary-h) 75% 78%);
+  --brand-400: hsl(var(--brand-primary-h) 75% 68%);
+  --brand-500: hsl(var(--brand-primary-h) var(--brand-primary-s) var(--brand-primary-l));
+  --brand-600: hsl(var(--brand-primary-h) 70% 48%);
+  --brand-700: hsl(var(--brand-primary-h) 65% 38%);
+  --brand-800: hsl(var(--brand-primary-h) 55% 28%);
+  --brand-900: hsl(var(--brand-primary-h) 45% 18%);
+
+  /* --- Marca: gradiente roxo/teal signature --- */
+  --signature-violet: #7c3aed;
+  --signature-teal:   #14b8a6;
+  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #4f46e5 45%, #14b8a6 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #f3efff 0%, #eef6f4 100%);
+  --gradient-hero: radial-gradient(ellipse at 30% 40%, #2a1258 0%, #0d0820 55%, #050309 100%);
+
+  /* --- Status semântico (lead status) --- */
+  --status-cold:      #3b82f6;  /* frio — azul */
+  --status-cold-bg:   #eff6ff;
+  --status-warm:      #f59e0b;  /* morno — âmbar */
+  --status-warm-bg:   #fffbeb;
+  --status-hot:       #ef4444;  /* quente — vermelho */
+  --status-hot-bg:    #fef2f2;
+  --status-scheduled: #10b981;  /* agendado — verde */
+  --status-scheduled-bg:#ecfdf5;
+  --status-lost:      #6b7486;  /* perdido — slate */
+  --status-lost-bg:   #f5f6f8;
+
+  /* --- Integrações / sistema --- */
+  --ok:       #10b981;
+  --ok-bg:    #ecfdf5;
+  --warn:     #f59e0b;
+  --warn-bg:  #fffbeb;
+  --danger:   #dc2626;
+  --danger-bg:#fef2f2;
+  --info:     #0ea5e9;
+  --info-bg:  #f0f9ff;
+
+  /* --- Semantic tokens --- */
+  --bg-canvas:   var(--ink-50);
+  --bg-surface:  var(--ink-0);
+  --bg-raised:   var(--ink-0);
+  --bg-sunken:   var(--ink-75);
+  --bg-muted:    var(--ink-50);
+  --border:      var(--ink-100);
+  --border-strong: var(--ink-150);
+  --text-primary:   var(--ink-800);
+  --text-secondary: var(--ink-500);
+  --text-tertiary:  var(--ink-400);
+  --text-inverse:   var(--ink-0);
+
+  /* --- Typography --- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-base: 13px;
+  --fs-md:   14px;
+  --fs-lg:   16px;
+  --fs-xl:   20px;
+  --fs-2xl:  24px;
+  --fs-3xl:  32px;
+  --fs-4xl:  44px;
+  --fs-5xl:  60px;
+  --fs-6xl:  84px;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --lh-tight: 1.15;
+  --lh-snug:  1.35;
+  --lh-base:  1.5;
+
+  --tracking-tight: -0.02em;
+  --tracking-snug:  -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:  0.04em;
+  --tracking-caps:  0.08em;
+
+  /* --- Spacing (density-scaled) --- */
+  --sp-1:  calc(4px  * var(--density-scale));
+  --sp-2:  calc(8px  * var(--density-scale));
+  --sp-3:  calc(12px * var(--density-scale));
+  --sp-4:  calc(16px * var(--density-scale));
+  --sp-5:  calc(20px * var(--density-scale));
+  --sp-6:  calc(24px * var(--density-scale));
+  --sp-8:  calc(32px * var(--density-scale));
+  --sp-10: calc(40px * var(--density-scale));
+  --sp-12: calc(48px * var(--density-scale));
+  --sp-16: calc(64px * var(--density-scale));
+  --sp-20: calc(80px * var(--density-scale));
+  --sp-24: calc(96px * var(--density-scale));
+
+  /* --- Radius (scaled) --- */
+  --r-xs: calc(4px  * var(--radius-scale));
+  --r-sm: calc(6px  * var(--radius-scale));
+  --r-md: calc(8px  * var(--radius-scale));
+  --r-lg: calc(12px * var(--radius-scale));
+  --r-xl: calc(16px * var(--radius-scale));
+  --r-2xl:calc(20px * var(--radius-scale));
+  --r-pill: 999px;
+
+  /* --- Elevation --- */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 8px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.10), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
+  --shadow-focus: 0 0 0 3px hsl(var(--brand-primary-h) 85% 90%);
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-inout: cubic-bezier(0.6, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 360ms;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+a { color: inherit; text-decoration: none; }
+
+::selection { background: var(--brand-200); color: var(--brand-900); }
+
+/* Mono numeric alignment */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

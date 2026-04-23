@@ -19,3 +19,5 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     memberships = relationship("Membership", back_populates="tenant", cascade="all, delete-orphan")
     sessions = relationship("UserSession", back_populates="tenant")
     leads = relationship("Lead", back_populates="tenant")
+    source_signature_maps = relationship("SourceSignatureMap", back_populates="tenant", cascade="all, delete-orphan")
+    media_assets = relationship("MediaAsset", back_populates="tenant", cascade="all, delete-orphan")

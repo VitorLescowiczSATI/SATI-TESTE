@@ -7,6 +7,7 @@
 
 Ao final deste mapeamento, precisamos sair com:
 
+- uma exportacao bruta versionada localmente, mas nao commitada, do que existe no Nicochat
 - um inventario dos fluxos e subfluxos da Tenda RJ
 - uma traducao de cada bloco relevante para a linguagem da SATI
 - uma definicao clara do que entra no `MVP-Real`
@@ -29,6 +30,23 @@ Copiar o comportamento validado e traduzir para:
 - `saida para CRM`
 
 ## Ordem de mapeamento
+
+### 0. Exportar a configuracao real
+
+Antes de redesenhar qualquer coisa, precisamos puxar a configuracao real da `Tenda RJ`.
+
+Referencia operacional:
+
+- `docs/exportar-fluxo-tendarj-nicochat.md`
+- `tools/nicochat_export.py`
+
+Primeira tentativa:
+
+```powershell
+python tools/nicochat_export.py --tenant-slug tenda-rj
+```
+
+Se a API publica nao trouxer os blocos internos do editor, usar `DevTools > Network` no navegador e salvar os JSONs das chamadas do fluxo.
 
 ### 1. Main Flow
 

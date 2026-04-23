@@ -27,6 +27,11 @@ frontend/vite.config.d.ts
 **/.env.*
 !**/.env.example
 
+# Raw exports can contain lead/conversation data
+exports/nicochat/**
+!exports/nicochat/
+!exports/nicochat/.gitkeep
+
 # Editors / OS
 .idea/
 .vscode/

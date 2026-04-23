@@ -56,6 +56,15 @@ Em paralelo ao codigo, a proxima frente funcional continua sendo:
 Referencia de trabalho:
 
 - `docs/mapeamento-nicochat-tenda.md`
+- `docs/exportar-fluxo-tendarj-nicochat.md`
+
+Exportador inicial:
+
+```powershell
+python tools/nicochat_export.py --tenant-slug tenda-rj
+```
+
+O token deve ficar em `.env.nicochat` como `NICOCHAT_TOKEN=...`. Arquivos brutos em `exports/nicochat/` ficam fora do Git por segurança.
 
 ## Docker local
 

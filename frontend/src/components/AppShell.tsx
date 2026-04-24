@@ -9,7 +9,7 @@ type AppShellProps = {
   title: string;
   subtitle: string;
   session: DemoSession;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
 };
 
 export function AppShell({

@@ -9,7 +9,7 @@ import type { DemoSession } from "../../types";
 
 type LoginPageProps = {
   onBack: () => void;
-  onLogin: (session: DemoSession) => void;
+  onLogin: (email: string, password: string) => Promise<DemoSession>;
 };
 
 export function LoginPage({ onBack, onLogin }: LoginPageProps) {
@@ -18,7 +18,7 @@ export function LoginPage({ onBack, onLogin }: LoginPageProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!email.trim() || !password.trim()) {
@@ -29,15 +29,13 @@ export function LoginPage({ onBack, onLogin }: LoginPageProps) {
     setError("");
     setLoading(true);
 
-    // simulacao curta para suavizar a transicao dark -> light
-    setTimeout(() => {
-      onLogin({
-        fullName: email.split("@")[0] || "Operador",
-        email,
-        tenantName: "Tenda RJ",
-        role: "tenant_admin",
-      });
-    }, 250);
+    try {
+      await onLogin(email, password);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Nao foi possivel entrar.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

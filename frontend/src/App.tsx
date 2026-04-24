@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./features/auth/LoginPage";
+import { useSession } from "./features/auth/useSession";
 import { RuntimeWorkspace } from "./features/runtime/RuntimeWorkspace";
 import { DashboardPage } from "./pages/DashboardPage";
 import { HomePage } from "./pages/HomePage";
 import { InboxPage } from "./pages/InboxPage";
 import { LeadsPage } from "./pages/LeadsPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import type { AppViewKey, DemoSession } from "./types";
+import type { AppViewKey } from "./types";
 
 const PAGE_META: Record<AppViewKey, { title: string; subtitle: string }> = {
   dashboard: {
@@ -33,7 +34,7 @@ const PAGE_META: Record<AppViewKey, { title: string; subtitle: string }> = {
 };
 
 function App() {
-  const [session, setSession] = useState<DemoSession | null>(null);
+  const { session, status, loginWithPassword, logoutCurrentSession } = useSession();
   const [activeView, setActiveView] = useState<AppViewKey>("dashboard");
   const [publicView, setPublicView] = useState<"home" | "login">("home");
 
@@ -56,6 +57,18 @@ function App() {
     }
   }, [activeView, session]);
 
+  if (status === "loading") {
+    return (
+      <div className="brand-surface">
+        <div className="b-shell">
+          <div className="b-login-form" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+            <p className="lede">Carregando sua sessao...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (session === null) {
     if (publicView === "home") {
       return <HomePage onOpenLogin={() => setPublicView("login")} />;
@@ -64,9 +77,10 @@ function App() {
     return (
       <LoginPage
         onBack={() => setPublicView("home")}
-        onLogin={(nextSession) => {
-          setSession(nextSession);
+        onLogin={async (email, password) => {
+          const nextSession = await loginWithPassword(email, password);
           setPublicView("home");
+          return nextSession;
         }}
       />
     );
@@ -79,8 +93,8 @@ function App() {
       title={page.title}
       subtitle={page.subtitle}
       session={session}
-      onLogout={() => {
-        setSession(null);
+      onLogout={async () => {
+        await logoutCurrentSession();
         setActiveView("dashboard");
         setPublicView("home");
       }}

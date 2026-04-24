@@ -4,10 +4,14 @@ export type RuntimeTabKey = "geral" | "states" | "policies" | "crm" | "preview";
 export type AppViewKey = "dashboard" | "inbox" | "leads" | "runtime" | "settings";
 
 export interface DemoSession {
+  userId: string;
   fullName: string;
   email: string;
+  tenantId: string;
+  tenantSlug: string;
   tenantName: string;
   role: string;
+  expiresAt: string;
 }
 
 export interface TenantConfig {

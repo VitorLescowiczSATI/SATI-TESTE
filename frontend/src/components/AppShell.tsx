@@ -21,13 +21,10 @@ export function AppShell({
   session,
   onLogout,
 }: AppShellProps) {
-  const items = [
+  const items: Array<{ key: AppViewKey; label: string; iconKey: string }> = [
     { key: "dashboard", label: "Dashboard", iconKey: "home" },
-    { key: "inbox", label: "Console WhatsApp", iconKey: "inbox" },
-    { key: "leads", label: "Leads", iconKey: "users", count: 142 },
-    { key: "runtime", label: "Atendimento da IA", iconKey: "settings" },
-    { key: "settings", label: "Configurações", iconKey: "shield" },
-  ] as const;
+    { key: "playground", label: "Playground", iconKey: "inbox" },
+  ];
 
   const initials = session.fullName
     .split(" ")
@@ -55,7 +52,7 @@ export function AppShell({
             </span>
           </div>
 
-          <div className="group">Operacao</div>
+          <div className="group">MVP-demo</div>
           {items.map((item) => {
             const ItemIcon = Icon[item.iconKey];
             return (
@@ -67,7 +64,6 @@ export function AppShell({
               >
                 <ItemIcon />
                 {item.label}
-                {"count" in item && item.count != null ? <span className="count">{item.count}</span> : null}
               </button>
             );
           })}
@@ -91,11 +87,11 @@ export function AppShell({
                 marginBottom: 4,
               }}
             >
-              Operação ativa
+              Operacao ativa
             </div>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{session.tenantName}</div>
             <div className="caption" style={{ marginTop: 4 }}>
-              IA respondendo 24/7
+              MVP-demo em validacao
             </div>
           </div>
         </aside>
@@ -108,7 +104,7 @@ export function AppShell({
             </div>
             <div className="topbar-spacer" />
             <span className="config-chip active">
-              <Icon.whats /> WhatsApp ativo
+              <Icon.whats /> Teste WhatsApp
             </span>
             <span className="config-chip">
               <Icon.building /> {session.tenantName}

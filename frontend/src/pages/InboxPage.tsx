@@ -60,8 +60,8 @@ export function InboxPage() {
 
   return (
     <SectionCard
-      title="Console WhatsApp"
-      subtitle="Veja as mensagens que chegaram pelo webhook antes de ligar a IA da Maju."
+      title="Playground WhatsApp"
+      subtitle="Use esta tela para acompanhar mensagens reais do numero de teste e validar a Maju com calma."
       badge={{ label: "Webhook real", className: "badge--brand" }}
       actions={
         <button className="btn btn--secondary btn--sm" onClick={() => void refreshConversations()} disabled={loading}>

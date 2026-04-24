@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     seed_admin_email: str | None = None
     seed_admin_name: str = "Vitor Lescowicz"
     seed_admin_password: str | None = None
+    whatsapp_verify_token: str | None = None
+    whatsapp_default_tenant_slug: str = "tenda-rj"
 
     @property
     def cors_origin_list(self) -> list[str]:

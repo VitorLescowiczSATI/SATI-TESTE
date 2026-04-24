@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes import whatsapp_webhook
 from app.api.router import api_router
 from app.core.config import get_settings
 
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
         }
 
     app.include_router(api_router, prefix=settings.api_prefix)
+    app.include_router(whatsapp_webhook.router, prefix="/webhooks/whatsapp", tags=["webhooks"])
     return app
 
 

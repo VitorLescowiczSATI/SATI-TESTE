@@ -30,6 +30,10 @@ services:
         value: Vitor Lescowicz
       - key: SEED_ADMIN_PASSWORD
         sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: WHATSAPP_DEFAULT_TENANT_SLUG
+        value: tenda-rj
 
   - type: web
     name: sati-frontend

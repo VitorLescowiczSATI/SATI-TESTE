@@ -16,8 +16,8 @@ const PAGE_META: Record<AppViewKey, { title: string; subtitle: string }> = {
     subtitle: "Leads atendidos, agendamentos e tempo de resposta da sua operação em tempo real.",
   },
   inbox: {
-    title: "Atendimentos",
-    subtitle: "Conversas de WhatsApp em andamento. Acompanhe e assuma quando precisar.",
+    title: "Console WhatsApp",
+    subtitle: "Mensagens reais recebidas pelo webhook antes da IA responder.",
   },
   leads: {
     title: "Leads",

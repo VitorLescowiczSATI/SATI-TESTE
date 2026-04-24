@@ -23,7 +23,7 @@ export function AppShell({
 }: AppShellProps) {
   const items = [
     { key: "dashboard", label: "Dashboard", iconKey: "home" },
-    { key: "inbox", label: "Atendimentos", iconKey: "inbox", count: 12 },
+    { key: "inbox", label: "Console WhatsApp", iconKey: "inbox" },
     { key: "leads", label: "Leads", iconKey: "users", count: 142 },
     { key: "runtime", label: "Atendimento da IA", iconKey: "settings" },
     { key: "settings", label: "Configurações", iconKey: "shield" },

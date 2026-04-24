@@ -27,6 +27,8 @@ services:
       FRONTEND_URL: http://localhost:3000
       CORS_ORIGINS: http://localhost:3000,http://localhost:8031
       AUTH_COOKIE_SECURE: "false"
+      WHATSAPP_VERIFY_TOKEN: dev-whatsapp-token
+      WHATSAPP_DEFAULT_TENANT_SLUG: tenda-rj
     ports:
       - "8000:8000"
     depends_on:

@@ -51,9 +51,37 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
 async function readErrorMessage(response: Response) {
   try {
-    const data = (await response.json()) as { detail?: string };
-    return data.detail || "Nao foi possivel concluir a requisicao.";
+    const data = (await response.json()) as { detail?: unknown };
+    return formatApiDetail(data.detail);
   } catch {
     return "Nao foi possivel concluir a requisicao.";
   }
+}
+
+function formatApiDetail(detail: unknown) {
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+
+        if (item && typeof item === "object" && "msg" in item) {
+          return String((item as { msg: unknown }).msg);
+        }
+
+        return "";
+      })
+      .filter(Boolean);
+
+    if (messages.length > 0) {
+      return messages.join(" ");
+    }
+  }
+
+  return "Nao foi possivel concluir a requisicao.";
 }

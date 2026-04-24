@@ -44,6 +44,8 @@ def main() -> None:
             db.flush()
         else:
             user.full_name = settings.seed_admin_name
+            # Demo seed: keep the Render secret as the source of truth while we iterate.
+            user.password_hash = hash_password(settings.seed_admin_password)
             user.status = "active"
 
         membership = db.scalar(

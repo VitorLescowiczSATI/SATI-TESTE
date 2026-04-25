@@ -49,8 +49,33 @@ class ToolCallTrace:
 @dataclass(slots=True)
 class RuntimeResponse:
     assistant_text: str
+    assistant_chunks: list[str]
     tool_calls: list[ToolCallTrace]
     finish_reason: str | None = None
+
+
+MAX_CHUNKS_PER_TURN = 3
+MAX_CHARS_PER_CHUNK = 600
+
+
+def split_assistant_text(text: str) -> list[str]:
+    """Quebra a resposta da Maju em mensagens curtas como o Nicochat faz.
+
+    Usa linha em branco (`\\n\\n`) como separador primario. Se nao houver
+    quebra, devolve uma unica mensagem. Limita a 3 mensagens por turno.
+    """
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return []
+    raw_chunks = [chunk.strip() for chunk in cleaned.split("\n\n") if chunk.strip()]
+    if not raw_chunks:
+        return [cleaned]
+    if len(raw_chunks) > MAX_CHUNKS_PER_TURN:
+        # Junta o excesso na ultima permitida pra nao perder conteudo.
+        head = raw_chunks[: MAX_CHUNKS_PER_TURN - 1]
+        tail = " ".join(raw_chunks[MAX_CHUNKS_PER_TURN - 1 :])
+        raw_chunks = head + [tail]
+    return [chunk[:MAX_CHARS_PER_CHUNK] for chunk in raw_chunks]
 
 
 def resolve_strategy(strategy_key: str | None) -> type[BaseStrategy]:
@@ -177,20 +202,29 @@ def process_inbound(
             "Pode me mandar mais uma mensagem pra eu continuar?"
         )
 
+    chunks = split_assistant_text(assistant_text)
     now = datetime.now(timezone.utc)
-    db.add(
-        Message(
-            tenant_id=conversation.tenant_id,
-            conversation_id=conversation.id,
-            lead_id=lead.id,
-            direction="outbound",
-            message_type="text",
-            content_text=assistant_text,
-            raw_payload={"source": "openai", "mode": source_label, "finish_reason": finish_reason},
-            sent_by_ai=True,
-            delivery_status="sent" if source_label == "playground" else "pending_send",
+    initial_status = "sent" if source_label == "playground" else "pending_send"
+    for index, chunk in enumerate(chunks):
+        db.add(
+            Message(
+                tenant_id=conversation.tenant_id,
+                conversation_id=conversation.id,
+                lead_id=lead.id,
+                direction="outbound",
+                message_type="text",
+                content_text=chunk,
+                raw_payload={
+                    "source": "openai",
+                    "mode": source_label,
+                    "finish_reason": finish_reason,
+                    "chunk_index": index,
+                    "chunk_total": len(chunks),
+                },
+                sent_by_ai=True,
+                delivery_status=initial_status,
+            )
         )
-    )
     conversation.last_message_direction = "outbound"
     lead.last_outbound_at = now
 
@@ -200,6 +234,7 @@ def process_inbound(
 
     return RuntimeResponse(
         assistant_text=assistant_text,
+        assistant_chunks=chunks,
         tool_calls=tool_traces,
         finish_reason=finish_reason,
     )

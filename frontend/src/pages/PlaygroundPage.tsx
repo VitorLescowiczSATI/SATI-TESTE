@@ -82,12 +82,14 @@ export function PlaygroundPage() {
     const message = draftMessage.trim();
     if (!message || !selectedId) return;
 
+    const previousIds = new Set((selectedConversation?.messages ?? []).map((m) => m.id));
     setSending(true);
     setError("");
     try {
       setDraftMessage("");
       const conversation = await sendPlaygroundMessage(selectedId, message);
-      setSelectedConversation(conversation);
+      // Revela chunks novos progressivamente pra simular ritmo de WhatsApp.
+      await revealConversationProgressively(conversation, previousIds, setSelectedConversation);
       await refreshConversations();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nao foi possivel enviar a mensagem.");
@@ -315,6 +317,37 @@ function ProfileList({ profile }: { profile: ConsoleLeadProfile | null }) {
       ))}
     </dl>
   );
+}
+
+const CHUNK_REVEAL_DELAY_MS = 1200;
+
+async function revealConversationProgressively(
+  full: ConsoleConversationDetail,
+  previousIds: Set<string>,
+  setter: (next: ConsoleConversationDetail) => void,
+): Promise<void> {
+  const newAiTextMessages = full.messages.filter(
+    (msg) => !previousIds.has(msg.id) && msg.sent_by_ai && !msg.tool_name && msg.message_type === "text",
+  );
+
+  if (newAiTextMessages.length <= 1) {
+    setter(full);
+    return;
+  }
+
+  // Mostra primeiro tudo menos os AI text messages novos; depois revela um a um.
+  const newAiIds = new Set(newAiTextMessages.map((m) => m.id));
+  const baseline = full.messages.filter((msg) => !newAiIds.has(msg.id));
+  setter({ ...full, messages: baseline });
+
+  for (let i = 0; i < newAiTextMessages.length; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, CHUNK_REVEAL_DELAY_MS));
+    const upTo = newAiTextMessages.slice(0, i + 1);
+    setter({ ...full, messages: [...baseline, ...upTo] });
+  }
+
+  // Garante o estado final completo.
+  setter(full);
 }
 
 function humanizeState(state: string) {

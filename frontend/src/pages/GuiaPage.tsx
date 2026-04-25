@@ -104,6 +104,42 @@ export function GuiaPage() {
       </SectionCard>
 
       <SectionCard
+        title="Ritmo humano: debounce e splitting"
+        subtitle="Igual o Nicochat: a Maju espera o lead terminar de digitar e responde em mensagens curtas."
+        badge={{ label: "Comportamento", className: "badge--brand" }}
+      >
+        <div className="dashboard-grid">
+          <div className="card card--padded">
+            <strong>Espera de 7 segundos (debounce)</strong>
+            <p className="caption" style={{ marginTop: 6, lineHeight: 1.6 }}>
+              Quando o lead manda uma mensagem no WhatsApp, a SATI espera 7 segundos antes
+              de chamar o GPT. Se o lead manda outra mensagem nesse intervalo, o timer
+              reinicia. Resultado: 3 mensagens curtas em sequencia viram UMA chamada ao
+              GPT, com todo o contexto junto - e a Maju nao responde por partes
+              cortando o raciocinio do lead.
+            </p>
+            <p className="caption" style={{ marginTop: 8, fontSize: 12 }}>
+              <strong>No Playground:</strong> a resposta sai imediatamente (e ambiente de
+              teste, nao adianta esperar). No WhatsApp real: 7s sempre.
+            </p>
+          </div>
+          <div className="card card--padded">
+            <strong>Splitting de resposta</strong>
+            <p className="caption" style={{ marginTop: 6, lineHeight: 1.6 }}>
+              O prompt instrui a Maju a separar respostas em blocos de 1-2 frases curtas,
+              divididos por linha em branco. A SATI le isso e envia cada bloco como uma
+              mensagem WhatsApp separada, com 1.5s de pausa entre elas.
+              Maximo: 3 mensagens por turno.
+            </p>
+            <p className="caption" style={{ marginTop: 8, fontSize: 12 }}>
+              No Playground voce ve as bolhas aparecerem progressivamente, simulando o
+              ritmo de digitacao.
+            </p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
         title="As 4 tools da Maju"
         subtitle="Cada tool e um contrato direto, sem bloquinho. Mesmas que a Maju usa hoje no Nicochat."
         badge={{ label: "Function calling", className: "badge--outline" }}

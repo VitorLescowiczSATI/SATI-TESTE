@@ -46,6 +46,8 @@ def get_conversation_detail(db: Session, tenant_id: str, conversation_id: str) -
     return ConsoleConversationDetail(
         **summary.model_dump(),
         messages=[serialize_message(message) for message in messages],
+        summary_text=conversation.summary_text,
+        classified_at=conversation.classified_at,
     )
 
 

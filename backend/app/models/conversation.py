@@ -13,6 +13,11 @@ class Conversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), index=True)
     lead_id: Mapped[str] = mapped_column(ForeignKey("leads.id", ondelete="CASCADE"), index=True)
+    config_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("runtime_config_versions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     runtime_state: Mapped[str] = mapped_column(default="novo")
     current_step: Mapped[str | None] = mapped_column(nullable=True)
     strategy_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
@@ -25,6 +30,7 @@ class Conversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     classified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     lead = relationship("Lead", back_populates="conversations")
+    runtime_config_version = relationship("RuntimeConfigVersion", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
     scheduled_jobs = relationship("ScheduledJob", back_populates="conversation", cascade="all, delete-orphan")
 

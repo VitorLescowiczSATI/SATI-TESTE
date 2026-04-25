@@ -24,6 +24,11 @@ class Lead(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     last_inbound_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_outbound_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     assigned_strategy_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    assigned_agent_config_id: Mapped[str | None] = mapped_column(
+        ForeignKey("agent_configs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     tenant = relationship("Tenant", back_populates="leads")
     profile = relationship("LeadProfile", back_populates="lead", uselist=False, cascade="all, delete-orphan")

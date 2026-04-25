@@ -21,3 +21,9 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     leads = relationship("Lead", back_populates="tenant")
     source_signature_maps = relationship("SourceSignatureMap", back_populates="tenant", cascade="all, delete-orphan")
     media_assets = relationship("MediaAsset", back_populates="tenant", cascade="all, delete-orphan")
+    agent_configs = relationship("AgentConfig", back_populates="tenant", cascade="all, delete-orphan")
+    runtime_config_versions = relationship(
+        "RuntimeConfigVersion",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+    )

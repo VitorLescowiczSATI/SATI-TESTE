@@ -38,6 +38,8 @@ class ConsoleMessage(BaseModel):
 
 class ConsoleConversationDetail(ConsoleConversationSummary):
     messages: list[ConsoleMessage]
+    summary_text: str | None = None
+    classified_at: datetime | None = None
 
 
 class PlaygroundConversationCreate(BaseModel):

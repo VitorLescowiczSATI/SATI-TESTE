@@ -13,12 +13,14 @@ from app.models.conversation import Conversation, Message
 from app.models.lead import Lead, LeadProfile
 from app.models.tenant import Tenant
 from app.runtime.strategies.mcmv_tenda_rj import MCMVTendaRJStrategy
-from app.services.conversation_console_service import get_conversation_detail
+from app.services.lead_analysis_service import refresh_conversation_analysis
+from app.services.runtime_config_service import build_runtime_prompt, get_published_runtime_config
 
 settings = get_settings()
 
 
 def create_playground_conversation(db: Session, tenant_id: str, lead_name: str | None) -> Conversation:
+    runtime_config = get_published_runtime_config(db, tenant_id)
     lead = Lead(
         tenant_id=tenant_id,
         name=lead_name or "Lead de Teste",
@@ -26,6 +28,7 @@ def create_playground_conversation(db: Session, tenant_id: str, lead_name: str |
         source_channel="playground",
         status="novo",
         assigned_strategy_key=MCMVTendaRJStrategy.config.key,
+        assigned_agent_config_id=runtime_config.agent_config_id,
     )
     db.add(lead)
     db.flush()
@@ -34,6 +37,7 @@ def create_playground_conversation(db: Session, tenant_id: str, lead_name: str |
     conversation = Conversation(
         tenant_id=tenant_id,
         lead_id=lead.id,
+        config_version_id=runtime_config.id,
         runtime_state="novo",
         current_step="playground_inicio",
         strategy_key=MCMVTendaRJStrategy.config.key,
@@ -93,11 +97,12 @@ def handle_playground_message(db: Session, tenant: Tenant, conversation_id: str,
             direction="outbound",
             message_type="text",
             content_text=assistant_text,
-            raw_payload={"source": "openai", "model": settings.openai_model},
+            raw_payload={"source": "openai", "mode": "playground"},
             sent_by_ai=True,
             delivery_status="sent",
         )
     )
+    refresh_conversation_analysis(db, conversation)
     db.add(lead)
     db.add(conversation)
     db.commit()
@@ -126,14 +131,17 @@ def generate_maju_response(db: Session, conversation: Conversation) -> str:
         if message.content_text
     ]
 
+    runtime_config = (
+        conversation.runtime_config_version
+        if conversation.runtime_config_version is not None
+        else get_published_runtime_config(db, conversation.tenant_id)
+    )
     client = OpenAI(api_key=settings.openai_api_key)
     response = client.responses.create(
-        model=settings.openai_model,
-        instructions=MCMVTendaRJStrategy.build_system_prompt(
-            datetime.now(timezone.utc).isoformat()
-        ),
+        model=runtime_config.agent_config.model or settings.openai_model,
+        instructions=build_runtime_prompt(db, runtime_config),
         input=input_messages,
-        max_output_tokens=MCMVTendaRJStrategy.config.max_tokens,
+        max_output_tokens=runtime_config.agent_config.max_tokens,
     )
 
     output_text = getattr(response, "output_text", None)

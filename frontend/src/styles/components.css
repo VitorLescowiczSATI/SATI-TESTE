@@ -577,6 +577,21 @@
 .alert--error { background: var(--danger-bg); border-color: #fecaca; color: #991b1b; }
 .alert--info  { background: var(--info-bg); border-color: #bae6fd; color: #075985; }
 
+.json-preview {
+  max-height: 280px;
+  overflow: auto;
+  padding: var(--sp-4);
+  margin: var(--sp-3) 0 0;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 /* ---- Tabs ---- */
 .tabs {
   display: flex;

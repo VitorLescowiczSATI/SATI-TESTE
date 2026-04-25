@@ -33,6 +33,8 @@ export type ConsoleMessage = {
 
 export type ConsoleConversationDetail = ConsoleConversationSummary & {
   messages: ConsoleMessage[];
+  summary_text: string | null;
+  classified_at: string | null;
 };
 
 export function listActiveConversations() {

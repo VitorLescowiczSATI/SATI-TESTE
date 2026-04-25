@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export type RuntimeTabKey = "geral" | "states" | "policies" | "crm" | "preview";
-export type AppViewKey = "dashboard" | "playground";
+export type AppViewKey = "dashboard" | "playground" | "guia" | "admin";
 
 export interface DemoSession {
   userId: string;

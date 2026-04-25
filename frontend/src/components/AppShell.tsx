@@ -24,6 +24,8 @@ export function AppShell({
   const items: Array<{ key: AppViewKey; label: string; iconKey: string }> = [
     { key: "dashboard", label: "Dashboard", iconKey: "home" },
     { key: "playground", label: "Playground", iconKey: "inbox" },
+    { key: "guia", label: "Como funciona", iconKey: "spark" },
+    { key: "admin", label: "Configuracao", iconKey: "settings" },
   ];
 
   const initials = session.fullName

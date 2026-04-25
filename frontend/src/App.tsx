@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./features/auth/LoginPage";
 import { useSession } from "./features/auth/useSession";
+import { AdminPage } from "./pages/AdminPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { GuiaPage } from "./pages/GuiaPage";
 import { HomePage } from "./pages/HomePage";
 import { PlaygroundPage } from "./pages/PlaygroundPage";
 import type { AppViewKey } from "./types";
@@ -15,6 +17,14 @@ const PAGE_META: Record<AppViewKey, { title: string; subtitle: string }> = {
   playground: {
     title: "Playground",
     subtitle: "Ambiente de teste com chat, perfil do lead e function calls em tempo real.",
+  },
+  guia: {
+    title: "Como funciona",
+    subtitle: "O pipeline da Maju explicado em 6 passos, com roteiro de demo.",
+  },
+  admin: {
+    title: "Configuracao",
+    subtitle: "Edite prompt, modelo, tools e gerencie leads do tenant.",
   },
 };
 
@@ -31,6 +41,10 @@ function App() {
         return <DashboardPage session={session} onOpenPlayground={() => setActiveView("playground")} />;
       case "playground":
         return <PlaygroundPage />;
+      case "guia":
+        return <GuiaPage />;
+      case "admin":
+        return <AdminPage />;
       default:
         return null;
     }

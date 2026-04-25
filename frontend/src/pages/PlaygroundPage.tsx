@@ -88,7 +88,6 @@ export function PlaygroundPage() {
     try {
       setDraftMessage("");
       const conversation = await sendPlaygroundMessage(selectedId, message);
-      // Revela chunks novos progressivamente pra simular ritmo de WhatsApp.
       await revealConversationProgressively(conversation, previousIds, setSelectedConversation);
       await refreshConversations();
     } catch (err) {
@@ -123,94 +122,111 @@ export function PlaygroundPage() {
       {error ? <div className="alert alert--error" style={{ marginBottom: 16 }}>{error}</div> : null}
 
       <div className="playground-layout">
-        <aside className="conversation-list">
+        <aside className="playground-list">
+          <div className="playground-section-label">Conversas ({conversations.length})</div>
+
           {loading && conversations.length === 0 ? (
-            <div className="card card--padded">
-              <strong>Carregando conversas...</strong>
-            </div>
+            <p className="side-empty">Carregando conversas...</p>
           ) : null}
 
           {!loading && conversations.length === 0 ? (
-            <div className="card card--padded">
-              <strong>Nenhum lead de teste ainda</strong>
-              <p className="caption" style={{ marginTop: 8 }}>
-                Crie um lead de teste e mande a primeira mensagem para a Maju responder.
-              </p>
-            </div>
+            <p className="side-empty">
+              Nenhum lead ainda. Clique em "Novo lead de teste" pra comecar.
+            </p>
           ) : null}
 
           {conversations.map((item) => {
-            const displayName = item.lead.name || item.lead.phone;
+            const displayName = item.lead.name || formatPhone(item.lead.phone);
+            const classification = item.lead.classification;
             return (
               <button
                 key={item.id}
                 type="button"
-                className={`conversation-item ${item.id === selectedId ? "active" : ""}`}
+                className={`conv-card ${item.id === selectedId ? "is-active" : ""}`}
                 onClick={() => setSelectedId(item.id)}
               >
-                <div className="conversation-item-head">
-                  <strong>{displayName}</strong>
-                  <span className="badge badge--neutral">{humanizeState(item.runtime_state)}</span>
+                <div className="conv-card-top">
+                  <span className="conv-card-name">{displayName}</span>
+                  <span className="badge-state">{humanizeState(item.runtime_state)}</span>
                 </div>
-                <p>{item.last_message_preview || "Mensagem sem texto."}</p>
-                <span>
-                  {item.message_count} msg - {formatDateTime(item.updated_at)}
-                  {item.lead.classification ? ` - ${item.lead.classification}` : ""}
-                </span>
+                <p className="conv-card-preview">
+                  {item.last_message_preview || "Sem texto visivel ainda."}
+                </p>
+                <div className="conv-card-meta">
+                  <span>{item.message_count} msg</span>
+                  <span className="conv-card-meta-dot" />
+                  <span>{formatDateTime(item.updated_at)}</span>
+                  {classification ? (
+                    <>
+                      <span className="conv-card-meta-dot" />
+                      <span className={`badge-class ${classificationBadgeClass(classification)}`}>
+                        {classification}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
               </button>
             );
           })}
         </aside>
 
-        <section className="card card--padded playground-chat">
-          <div className="section-title" style={{ marginBottom: 10 }}>
-            <div>
-              <h3 style={{ margin: 0 }}>
-                {selectedConversation?.lead.name || selectedConversation?.lead.phone || "Conversa"}
-              </h3>
-              <div className="section-subtitle">
-                {selectedConversation
-                  ? `${selectedConversation.lead.phone} - ${humanizeState(selectedConversation.runtime_state)}`
-                  : "Selecione uma conversa para ver as mensagens."}
+        <section className="playground-chat">
+          {selectedConversation ? (
+            <header className="chat-header">
+              <div className="chat-avatar">{initialsOf(selectedConversation.lead.name || selectedConversation.lead.phone)}</div>
+              <div className="chat-header-info">
+                <span className="chat-header-name">
+                  {selectedConversation.lead.name || formatPhone(selectedConversation.lead.phone)}
+                </span>
+                <span className="chat-header-meta">
+                  {formatPhone(selectedConversation.lead.phone)} - {humanizeState(selectedConversation.runtime_state)}
+                </span>
               </div>
-            </div>
-          </div>
+            </header>
+          ) : null}
 
-          <div className="chat" style={{ minHeight: 360 }}>
-            {!selectedConversation ? <div className="bubble system">Crie um lead de teste para comecar</div> : null}
-
-            {selectedConversation?.messages.map((message) => {
-              if (message.tool_name) {
+          {selectedConversation ? (
+            <div className="chat">
+              {selectedConversation.messages.length === 0 ? (
+                <div className="bubble system">Sem mensagens ainda. Mande a primeira pra Maju responder.</div>
+              ) : null}
+              {selectedConversation.messages.map((message) => {
+                if (message.tool_name) {
+                  return (
+                    <div key={message.id} className="bubble tool">
+                      <span className="tag">tool</span>
+                      <strong>{message.tool_name}</strong>
+                      <code>{JSON.stringify(message.tool_payload ?? {}, null, 2)}</code>
+                      {message.tool_result_text ? (
+                        <p style={{ margin: "var(--sp-2) 0 0", fontSize: "var(--fs-xs)", opacity: 0.7 }}>
+                          {message.tool_result_text}
+                        </p>
+                      ) : null}
+                      <span className="time">{formatTime(message.created_at)}</span>
+                    </div>
+                  );
+                }
                 return (
-                  <div key={message.id} className="bubble system tool">
-                    <span className="tag">tool</span>
-                    <strong>{message.tool_name}</strong>
-                    <code style={{ display: "block", marginTop: 6, fontSize: 12 }}>
-                      {JSON.stringify(message.tool_payload ?? {}, null, 2)}
-                    </code>
-                    {message.tool_result_text ? (
-                      <p style={{ margin: "6px 0 0", fontSize: 12, opacity: 0.8 }}>
-                        {message.tool_result_text}
-                      </p>
-                    ) : null}
+                  <div
+                    key={message.id}
+                    className={`bubble ${message.sent_by_ai ? "ai" : message.direction === "inbound" ? "in" : "out"}`}
+                  >
+                    {message.sent_by_ai ? <span className="tag">Maju</span> : null}
+                    {message.content_text || labelMessageType(message.message_type)}
                     <span className="time">{formatTime(message.created_at)}</span>
                   </div>
                 );
-              }
-              return (
-                <div
-                  key={message.id}
-                  className={`bubble ${message.sent_by_ai ? "ai" : message.direction === "inbound" ? "in" : "out"}`}
-                >
-                  {message.sent_by_ai ? <span className="tag">SATI</span> : null}
-                  {message.content_text || labelMessageType(message.message_type)}
-                  <span className="time">{formatTime(message.created_at)}</span>
-                </div>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          ) : (
+            <div className="chat-empty">
+              <Icon.spark />
+              <strong>Selecione uma conversa</strong>
+              <p>Crie um novo lead de teste ou escolha um da lista pra comecar a interagir com a Maju.</p>
+            </div>
+          )}
 
-          <form onSubmit={submitMessage} style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <form onSubmit={submitMessage} className="chat-composer">
             <input
               className="input"
               value={draftMessage}
@@ -218,7 +234,7 @@ export function PlaygroundPage() {
               placeholder={
                 selectedConversation
                   ? "Digite como se voce fosse o lead..."
-                  : "Crie um lead de teste para comecar"
+                  : "Crie um lead de teste pra comecar"
               }
               disabled={!selectedConversation || sending}
             />
@@ -232,57 +248,55 @@ export function PlaygroundPage() {
           </form>
         </section>
 
-        <aside className="card card--padded playground-side">
-          <h3 style={{ margin: "0 0 12px" }}>Painel da Maju</h3>
+        <aside className="playground-side">
+          <div className="playground-section-label">Painel da Maju</div>
 
-          <div style={{ marginBottom: 18 }}>
-            <div className="section-subtitle" style={{ marginBottom: 6 }}>Classificacao</div>
+          <div className="side-block side-classification">
+            <div className="playground-section-label">Classificacao</div>
             {selectedConversation ? (
               <>
-                <span className={`badge ${classificationBadge(selectedConversation.lead.classification)}`}>
+                <span className={`badge-class ${classificationBadgeClass(selectedConversation.lead.classification)}`}>
                   {selectedConversation.lead.classification ?? "sem classificacao"}
                 </span>
                 {selectedConversation.lead.classification_reason ? (
-                  <p className="caption" style={{ marginTop: 8 }}>{selectedConversation.lead.classification_reason}</p>
+                  <p className="side-classification-reason">{selectedConversation.lead.classification_reason}</p>
                 ) : null}
               </>
             ) : (
-              <p className="caption">Aguardando conversa.</p>
+              <p className="side-empty">Aguardando conversa.</p>
             )}
           </div>
 
-          <div style={{ marginBottom: 18 }}>
-            <div className="section-subtitle" style={{ marginBottom: 6 }}>Perfil coletado</div>
-            <ProfileList profile={selectedConversation?.lead_profile ?? null} />
+          <div className="side-block">
+            <div className="playground-section-label">Perfil coletado</div>
+            <ProfileGrid profile={selectedConversation?.lead_profile ?? null} />
           </div>
 
-          <div>
-            <div className="section-subtitle" style={{ marginBottom: 6 }}>
-              Function calls disparadas ({toolCalls.length})
-            </div>
+          <div className="side-block">
+            <div className="playground-section-label">Function calls ({toolCalls.length})</div>
             {toolCalls.length === 0 ? (
-              <p className="caption">Nenhuma tool acionada ainda.</p>
+              <p className="side-empty">Nenhuma tool acionada ainda.</p>
             ) : (
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
+              <div className="side-toolcalls">
                 {toolCalls.map((call) => (
-                  <li key={call.id} className="card card--flat" style={{ padding: 10 }}>
-                    <strong>{call.tool_name}</strong>
-                    <span className="caption" style={{ display: "block", marginTop: 2 }}>
-                      {formatTime(call.created_at)}
-                    </span>
-                    <code style={{ display: "block", marginTop: 6, fontSize: 11, whiteSpace: "pre-wrap" }}>
+                  <div key={call.id} className="side-toolcall">
+                    <div className="side-toolcall-head">
+                      <span className="side-toolcall-name">{call.tool_name}</span>
+                      <span className="side-toolcall-time">{formatTime(call.created_at)}</span>
+                    </div>
+                    <pre className="side-toolcall-payload">
                       {JSON.stringify(call.tool_payload ?? {}, null, 2)}
-                    </code>
-                  </li>
+                    </pre>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
 
           {selectedConversation?.summary_text ? (
-            <div style={{ marginTop: 18 }}>
-              <div className="section-subtitle" style={{ marginBottom: 6 }}>Resumo</div>
-              <p className="caption">{selectedConversation.summary_text}</p>
+            <div className="side-block">
+              <div className="playground-section-label">Resumo</div>
+              <p className="side-classification-reason">{selectedConversation.summary_text}</p>
             </div>
           ) : null}
         </aside>
@@ -291,28 +305,28 @@ export function PlaygroundPage() {
   );
 }
 
-function ProfileList({ profile }: { profile: ConsoleLeadProfile | null }) {
-  if (!profile) return <p className="caption">Sem perfil ainda.</p>;
+function ProfileGrid({ profile }: { profile: ConsoleLeadProfile | null }) {
+  if (!profile) return <p className="side-empty">Sem perfil ainda.</p>;
   const rows: Array<[string, string | null]> = [
-    ["Comprovacao renda", profile.proof_of_income_type],
-    ["Usa FGTS", profile.uses_fgts === null ? null : profile.uses_fgts ? "sim" : "nao"],
-    ["Renda familiar", profile.family_income !== null ? `R$ ${profile.family_income.toLocaleString("pt-BR")}` : null],
-    ["Tempo carteira", profile.employment_history_months !== null ? `${profile.employment_history_months} meses` : null],
-    ["Estado civil", profile.marital_status],
+    ["Renda fam.", profile.family_income !== null ? `R$ ${profile.family_income.toLocaleString("pt-BR")}` : null],
+    ["FGTS", profile.uses_fgts === null ? null : profile.uses_fgts ? "sim" : "nao"],
+    ["Comprovacao", profile.proof_of_income_type],
+    ["Carteira", profile.employment_history_months !== null ? `${profile.employment_history_months}m` : null],
+    ["Civil", profile.marital_status],
     ["Nascimento", profile.birth_date],
     ["Dependentes", profile.dependents_summary],
-    ["Empreendimento", profile.interest_project],
+    ["Empreend.", profile.interest_project],
     ["Regiao", profile.interest_region],
-    ["Agendamento", profile.scheduled_at ? formatDateTime(profile.scheduled_at) : null],
+    ["Agendado", profile.scheduled_at ? formatDateTime(profile.scheduled_at) : null],
   ];
   const filled = rows.filter(([, value]) => value !== null && value !== "");
-  if (filled.length === 0) return <p className="caption">Sem dados estruturados ainda.</p>;
+  if (filled.length === 0) return <p className="side-empty">Sem dados estruturados ainda.</p>;
   return (
-    <dl style={{ margin: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", fontSize: 13 }}>
+    <dl className="side-profile">
       {filled.map(([label, value]) => (
-        <div key={label}>
-          <dt className="caption" style={{ margin: 0 }}>{label}</dt>
-          <dd style={{ margin: 0, fontWeight: 500 }}>{value}</dd>
+        <div key={label} className="side-profile-item">
+          <dt>{label}</dt>
+          <dd>{value}</dd>
         </div>
       ))}
     </dl>
@@ -335,7 +349,6 @@ async function revealConversationProgressively(
     return;
   }
 
-  // Mostra primeiro tudo menos os AI text messages novos; depois revela um a um.
   const newAiIds = new Set(newAiTextMessages.map((m) => m.id));
   const baseline = full.messages.filter((msg) => !newAiIds.has(msg.id));
   setter({ ...full, messages: baseline });
@@ -346,7 +359,6 @@ async function revealConversationProgressively(
     setter({ ...full, messages: [...baseline, ...upTo] });
   }
 
-  // Garante o estado final completo.
   setter(full);
 }
 
@@ -361,15 +373,37 @@ function humanizeState(state: string) {
   return labels[state] || state.replace(/_/g, " ");
 }
 
-function classificationBadge(classification: string | null) {
-  if (classification === "agendado") return "badge--success";
-  if (classification === "quente") return "badge--brand";
-  if (classification === "corretor") return "badge--outline";
-  return "badge--neutral";
+function classificationBadgeClass(classification: string | null | undefined) {
+  switch (classification) {
+    case "agendado":
+      return "badge-class--scheduled";
+    case "quente":
+      return "badge-class--hot";
+    case "morno":
+      return "badge-class--warm";
+    case "frio":
+      return "badge-class--cold";
+    default:
+      return "badge-class--neutral";
+  }
+}
+
+function initialsOf(value: string) {
+  const cleaned = value.replace(/^playground-/, "Lead ");
+  return cleaned
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "L";
+}
+
+function formatPhone(phone: string) {
+  if (phone.startsWith("playground-")) return phone.replace("playground-", "test ");
+  return phone;
 }
 
 function labelMessageType(type: string) {
-  return `[${type}] Mensagem recebida sem texto visivel.`;
+  return `[${type}] Mensagem sem texto visivel.`;
 }
 
 function formatDateTime(value: string) {

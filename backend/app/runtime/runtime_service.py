@@ -58,6 +58,38 @@ MAX_CHUNKS_PER_TURN = 3
 MAX_CHARS_PER_CHUNK = 600
 
 
+# Anexado pelo runtime apos o prompt do agent (operador nao pode desligar).
+# Garante que tools e splitting funcionem mesmo se o admin editar o prompt.
+HARDCODED_RULES_FOOTER = """
+# Regras criticas do runtime SATI (nao remover)
+
+## Tools disponiveis
+
+Voce TEM acesso as seguintes funcoes (function calling). Use-as ao inves de
+descrever em texto que vai fazer:
+
+- `simula(proof_of_income_type, uses_fgts, family_income)` -> CHAME assim que
+  tiver os 3 dados da simulacao inicial. Nao diga "vou simular" sem chamar.
+- `simula_completo(employment_history_months, marital_status, birth_date, dependents_summary)`
+  -> CHAME apos coletar todos os 4 campos da simulacao completa.
+- `schedule_time(date, time)` -> CHAME assim que tiver dia E horario claros do
+  pre-agendamento. Formate date como YYYY-MM-DD e time como HH:MM (24h).
+- `send_media(project_slug, media_type)` -> CHAME quando o lead pedir material
+  de um empreendimento.
+
+REGRA: se voce ja coletou os dados necessarios, CHAME a funcao na mesma
+resposta. Nao prometa "vou fazer mais a frente". A SATI persiste o resultado
+no banco assim que voce chama.
+
+## Formato obrigatorio de resposta
+
+- Toda resposta deve ser dividida em 1 a 3 mensagens curtas, separadas por
+  UMA linha em branco.
+- Cada mensagem tem no maximo 2 frases.
+- Sem markdown pesado, sem listas numeradas em rajada, sem bullets pesados.
+""".strip()
+
+
 def split_assistant_text(text: str) -> list[str]:
     """Quebra a resposta da Maju em mensagens curtas como o Nicochat faz.
 
@@ -108,7 +140,8 @@ def process_inbound(
         if conversation.runtime_config_version is not None
         else get_published_runtime_config(db, conversation.tenant_id)
     )
-    instructions = build_runtime_prompt(db, runtime_config)
+    base_instructions = build_runtime_prompt(db, runtime_config)
+    instructions = f"{base_instructions}\n\n{HARDCODED_RULES_FOOTER}"
     model = runtime_config.agent_config.model or strategy_cls.config.model or settings.openai_model
     max_tokens = runtime_config.agent_config.max_tokens or strategy_cls.config.max_tokens
 
@@ -247,10 +280,7 @@ def process_inbound(
 def _openai_tool_schemas(strategy_cls: type[BaseStrategy]) -> list[dict[str, Any]]:
     schemas: list[dict[str, Any]] = []
     for tool_cls in strategy_cls.tools:
-        json_schema = tool_cls.json_schema()
-        # OpenAI exige `additionalProperties: false` opcional, mas aceita sem.
-        # Removemos `title` no nivel raiz pra deixar mais limpo.
-        json_schema.pop("title", None)
+        json_schema = _clean_schema_for_openai(tool_cls.json_schema())
         schemas.append(
             {
                 "type": "function",
@@ -262,6 +292,38 @@ def _openai_tool_schemas(strategy_cls: type[BaseStrategy]) -> list[dict[str, Any
             }
         )
     return schemas
+
+
+def _clean_schema_for_openai(schema: dict[str, Any]) -> dict[str, Any]:
+    """Remove campos que confundem o function calling da OpenAI:
+    `title` redundante, defaults excessivos, e garante que cada propriedade
+    tenha description (cai pra title se nao tiver)."""
+    cleaned = dict(schema)
+    cleaned.pop("title", None)
+    cleaned.pop("$defs", None)
+    cleaned["type"] = cleaned.get("type", "object")
+    cleaned["additionalProperties"] = False
+
+    properties = dict(cleaned.get("properties", {}))
+    for name, prop_schema in properties.items():
+        if not isinstance(prop_schema, dict):
+            continue
+        prop_clean = dict(prop_schema)
+        # OpenAI mostra a description ao modelo - melhor ter algo.
+        if "description" not in prop_clean:
+            prop_clean["description"] = prop_clean.pop("title", name)
+        else:
+            prop_clean.pop("title", None)
+        # `anyOf` com null e padrao do Pydantic pra Optional - simplifica.
+        any_of = prop_clean.get("anyOf")
+        if isinstance(any_of, list):
+            non_null = [item for item in any_of if item.get("type") != "null"]
+            if len(non_null) == 1:
+                prop_clean.pop("anyOf", None)
+                prop_clean.update(non_null[0])
+        properties[name] = prop_clean
+    cleaned["properties"] = properties
+    return cleaned
 
 
 def _load_chat_history(db: Session, conversation: Conversation) -> list[dict[str, Any]]:

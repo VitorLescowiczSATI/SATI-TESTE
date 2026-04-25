@@ -36,50 +36,43 @@ def classify_lead(
     profile: LeadProfile | None,
     messages: list[Message],
 ) -> tuple[str, str]:
+    """Classifica o lead pelo ESTADO REAL verificavel (tools chamadas e dados
+    estruturados), nao por keywords no texto. Heuristica de texto entra
+    apenas pra detectar corretor/parceiro e como sinal fraco de "morno"."""
     text = " ".join((message.content_text or "").lower() for message in messages)
+    inbound_count = sum(1 for m in messages if m.direction == "inbound")
+    tool_names = {m.tool_name for m in messages if m.tool_name}
 
+    # 1) Corretor/parceiro - heuristica de texto e suficiente, e raro.
     if any(keyword in text for keyword in ("sou corretor", "sou imobiliaria", "parceria")):
-        return "corretor", "Contato parece ser corretor/imobiliaria, nao lead comprador final."
+        return "corretor", "Contato parece corretor/imobiliaria, nao lead comprador final."
 
+    # 2) Agendado - SO se a tool schedule_time foi chamada e gravou data.
     if profile and profile.scheduled_at:
-        return "agendado", "Lead tem pre-agendamento registrado."
+        return "agendado", "Pre-agendamento confirmado via tool schedule_time."
 
-    if any(keyword in text for keyword in ("visita", "visitar", "agendar", "sabado", "domingo")):
-        return "agendado", "Lead demonstrou intencao clara de agendamento ou visita."
+    # 3) Quente - sinais estruturados coletados via tool.
+    if "simula_completo" in tool_names:
+        return "quente", "Simulacao completa registrada (dados completos coletados)."
+    if "simula" in tool_names or (profile and profile.family_income):
+        return "quente", "Simulacao inicial registrada com renda e comprovacao."
 
-    has_simulation_data = bool(
-        profile
-        and (
-            profile.family_income
-            or profile.uses_fgts is not None
-            or profile.proof_of_income_type
-            or profile.interest_project
-            or profile.interest_region
-        )
-    )
+    # 4) Morno - lead engajou e mostrou interesse mas ainda nao gerou tool.
     has_buying_intent = any(
         keyword in text
         for keyword in (
-            "simular",
-            "simulacao",
-            "renda",
-            "fgts",
-            "entrada",
-            "parcela",
-            "apartamento",
-            "empreendimento",
-            "minha casa minha vida",
-            "mcmv",
+            "simular", "simulacao", "renda", "fgts", "entrada", "parcela",
+            "apartamento", "empreendimento", "minha casa minha vida", "mcmv",
+            "quero ver", "quero saber", "tenho interesse",
         )
     )
+    if inbound_count >= 3 and has_buying_intent:
+        return "morno", "Lead demonstrou interesse mas ainda nao concluiu simulacao."
 
-    if has_simulation_data or has_buying_intent:
-        return "quente", "Lead trouxe sinais de compra/simulacao ou dados comerciais relevantes."
-
-    if len([message for message in messages if message.direction == "inbound"]) <= 1:
-        return "frio", "Lead ainda tem pouca interacao e nenhum dado de simulacao."
-
-    return "frio", "Conversa ainda nao mostrou dados suficientes para qualificacao."
+    # 5) Frio - default.
+    if inbound_count <= 1:
+        return "frio", "Lead ainda tem pouca interacao."
+    return "frio", "Conversa em andamento sem dados estruturados ainda."
 
 
 def build_summary_text(

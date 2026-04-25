@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Icon } from "../components/Icons";
 import { SectionCard } from "../components/SectionCard";
 import {
+  createPlaygroundConversation,
   getConversationDetail,
   listActiveConversations,
+  sendPlaygroundMessage,
   type ConsoleConversationDetail,
   type ConsoleConversationSummary,
 } from "../features/inbox/conversationApi";
@@ -13,6 +15,9 @@ export function InboxPage() {
   const [selectedConversation, setSelectedConversation] = useState<ConsoleConversationDetail | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [draftMessage, setDraftMessage] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -58,15 +63,59 @@ export function InboxPage() {
     }
   }
 
+  async function createTestLead() {
+    setCreating(true);
+    setError("");
+
+    try {
+      const conversation = await createPlaygroundConversation();
+      setSelectedConversation(conversation);
+      setSelectedId(conversation.id);
+      await refreshConversations();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Nao foi possivel criar o lead de teste.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function submitMessage(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const message = draftMessage.trim();
+    if (!message || !selectedId) {
+      return;
+    }
+
+    setSending(true);
+    setError("");
+
+    try {
+      setDraftMessage("");
+      const conversation = await sendPlaygroundMessage(selectedId, message);
+      setSelectedConversation(conversation);
+      await refreshConversations();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Nao foi possivel enviar a mensagem.");
+      setDraftMessage(message);
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <SectionCard
-      title="Playground WhatsApp"
-      subtitle="Use esta tela para acompanhar mensagens reais do numero de teste e validar a Maju com calma."
-      badge={{ label: "Webhook real", className: "badge--brand" }}
+      title="Playground da Maju"
+      subtitle="Simule um lead real, converse com o GPT e salve tudo no banco para aparecer no Dashboard."
+      badge={{ label: "GPT integrado", className: "badge--brand" }}
       actions={
-        <button className="btn btn--secondary btn--sm" onClick={() => void refreshConversations()} disabled={loading}>
-          <Icon.inbox /> Atualizar
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn--secondary btn--sm" onClick={() => void refreshConversations()} disabled={loading}>
+            <Icon.inbox /> Atualizar
+          </button>
+          <button className="btn btn--primary btn--sm" onClick={() => void createTestLead()} disabled={creating}>
+            <Icon.users /> {creating ? "Criando..." : "Novo lead de teste"}
+          </button>
+        </div>
       }
     >
       {error ? <div className="alert alert--error" style={{ marginBottom: 16 }}>{error}</div> : null}
@@ -82,9 +131,9 @@ export function InboxPage() {
 
           {!loading && conversations.length === 0 ? (
             <div className="card card--padded">
-              <strong>Nenhuma conversa ainda</strong>
+              <strong>Nenhum lead de teste ainda</strong>
               <p className="caption" style={{ marginTop: 8 }}>
-                Assim que uma mensagem bater no webhook do WhatsApp, ela aparece aqui.
+                Crie um lead de teste e mande a primeira mensagem para a Maju responder com GPT.
               </p>
             </div>
           ) : null}
@@ -126,8 +175,8 @@ export function InboxPage() {
             </button>
           </div>
 
-          <div className="chat">
-            {!selectedConversation ? <div className="bubble system">Aguardando mensagens do webhook</div> : null}
+          <div className="chat" style={{ minHeight: 360 }}>
+            {!selectedConversation ? <div className="bubble system">Crie um lead de teste para comecar</div> : null}
 
             {selectedConversation?.messages.map((message) => (
               <div
@@ -140,6 +189,27 @@ export function InboxPage() {
               </div>
             ))}
           </div>
+
+          <form onSubmit={submitMessage} style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <input
+              className="input"
+              value={draftMessage}
+              onChange={(event) => setDraftMessage(event.target.value)}
+              placeholder={
+                selectedConversation
+                  ? "Digite como se voce fosse o lead..."
+                  : "Crie um lead de teste para comecar"
+              }
+              disabled={!selectedConversation || sending}
+            />
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={!selectedConversation || sending || !draftMessage.trim()}
+            >
+              {sending ? "Enviando..." : "Enviar"}
+            </button>
+          </form>
         </div>
       </div>
     </SectionCard>

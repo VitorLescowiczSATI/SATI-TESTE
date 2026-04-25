@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     seed_admin_password: str | None = None
     whatsapp_verify_token: str | None = None
     whatsapp_default_tenant_slug: str = "tenda-rj"
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4.1-mini"
 
     @property
     def cors_origin_list(self) -> list[str]:

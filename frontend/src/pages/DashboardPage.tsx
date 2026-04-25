@@ -62,13 +62,13 @@ export function DashboardPage({ session, onOpenPlayground }: DashboardPageProps)
               </span>
             </h1>
             <p className="caption" style={{ marginTop: 14, fontSize: 15, lineHeight: 1.6 }}>
-              Primeiro objetivo: validar login, webhook, persistencia e leitura das conversas antes de
-              ligar a IA da Maju.
+              Primeiro objetivo: simular um lead real no Playground, salvar tudo no banco e validar a
+              resposta da Maju com GPT.
             </p>
             <div className="hero-actions" style={{ marginTop: 18 }}>
               <span className="hero-chip"><Icon.checkCircle /> Login real</span>
               <span className="hero-chip"><Icon.database /> Banco real</span>
-              <span className="hero-chip"><Icon.whats /> Webhook em preparacao</span>
+              <span className="hero-chip"><Icon.spark /> GPT integrado</span>
             </div>
           </div>
 
@@ -85,12 +85,12 @@ export function DashboardPage({ session, onOpenPlayground }: DashboardPageProps)
                 <p>O login ja usa sessao real com cookie httpOnly.</p>
               </div>
               <div className="preview-step">
-                <strong>Webhook preparado</strong>
-                <p>A proxima validacao e receber mensagens reais da Meta.</p>
+                <strong>Playground com GPT</strong>
+                <p>A proxima validacao e conversar com a Maju simulando um lead real.</p>
               </div>
               <div className="preview-step">
-                <strong>IA ainda desligada</strong>
-                <p>A Maju entra depois que a entrada e o playground estiverem confiaveis.</p>
+                <strong>Dashboard com dados reais</strong>
+                <p>Cada simulacao salva lead, conversa e mensagens no banco.</p>
               </div>
             </div>
           </div>
@@ -100,7 +100,7 @@ export function DashboardPage({ session, onOpenPlayground }: DashboardPageProps)
       {error ? <div className="alert alert--error" style={{ marginBottom: 18 }}>{error}</div> : null}
 
       <div className="top-summary">
-        <RuntimeCard label="Conversas reais" value={loading ? "..." : String(metrics.conversations)} note="Criadas pelo webhook ou backend" />
+        <RuntimeCard label="Conversas reais" value={loading ? "..." : String(metrics.conversations)} note="Criadas pelo Playground ou backend" />
         <RuntimeCard label="Leads unicos" value={loading ? "..." : String(metrics.leads)} note="Telefones identificados no tenant" />
         <RuntimeCard label="Mensagens salvas" value={loading ? "..." : String(metrics.messages)} note="Total persistido no banco" />
         <RuntimeCard label="Ultima entrada" value={loading ? "..." : metrics.latestUpdate} note="Baseado na conversa mais recente" />
@@ -121,7 +121,7 @@ export function DashboardPage({ session, onOpenPlayground }: DashboardPageProps)
             <div className="card card--padded card--flat">
               <strong>Nenhuma conversa real ainda</strong>
               <p className="caption" style={{ marginTop: 8 }}>
-                Isso e esperado antes de configurar o webhook da Meta. Quando a primeira mensagem chegar,
+                Isso e esperado antes de criar o primeiro lead de teste. Quando a primeira mensagem for enviada,
                 os numeros desta tela deixam de ser zero automaticamente.
               </p>
             </div>
@@ -145,7 +145,7 @@ export function DashboardPage({ session, onOpenPlayground }: DashboardPageProps)
 
         <SectionCard
           title="Proximo teste"
-          subtitle="O caminho mais curto para validar com o Aristeu."
+          subtitle="O caminho mais curto para validar o core antes do WhatsApp."
           badge={{ label: "Operacional", className: "badge--outline" }}
           actions={
             <button className="btn btn--secondary btn--sm" onClick={onOpenPlayground}>
@@ -157,22 +157,22 @@ export function DashboardPage({ session, onOpenPlayground }: DashboardPageProps)
             <div className="timeline-step">
               <span className="timeline-index">1</span>
               <div>
-                <strong>Configurar WHATSAPP_VERIFY_TOKEN no Render</strong>
-                <p>Esse token e usado pela Meta para validar o webhook.</p>
+                <strong>Configurar OPENAI_API_KEY no Render</strong>
+                <p>Essa chave liga o Playground ao GPT e permite testar a Maju.</p>
               </div>
             </div>
             <div className="timeline-step">
               <span className="timeline-index">2</span>
               <div>
-                <strong>Apontar webhook na Meta</strong>
-                <p>URL: /webhooks/whatsapp no backend do Render.</p>
+                <strong>Criar lead de teste</strong>
+                <p>O Playground cria lead, conversa e primeira linha real no banco.</p>
               </div>
             </div>
             <div className="timeline-step">
               <span className="timeline-index">3</span>
               <div>
-                <strong>Enviar primeira mensagem real</strong>
-                <p>O Playground deve mostrar a conversa salva no banco.</p>
+                <strong>Conversar com a Maju</strong>
+                <p>Cada troca gera mensagem inbound/outbound e aparece no Dashboard.</p>
               </div>
             </div>
           </div>

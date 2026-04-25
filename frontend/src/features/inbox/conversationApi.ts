@@ -42,3 +42,20 @@ export function listActiveConversations() {
 export function getConversationDetail(conversationId: string) {
   return apiRequest<ConsoleConversationDetail>(`/conversations/${conversationId}`);
 }
+
+export function createPlaygroundConversation(leadName?: string) {
+  return apiRequest<ConsoleConversationDetail>("/playground/conversations", {
+    method: "POST",
+    body: { lead_name: leadName || "Lead de Teste" },
+  });
+}
+
+export function sendPlaygroundMessage(conversationId: string, message: string) {
+  return apiRequest<ConsoleConversationDetail>("/playground/messages", {
+    method: "POST",
+    body: {
+      conversation_id: conversationId,
+      message,
+    },
+  });
+}

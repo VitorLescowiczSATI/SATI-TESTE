@@ -38,3 +38,12 @@ class ConsoleMessage(BaseModel):
 
 class ConsoleConversationDetail(ConsoleConversationSummary):
     messages: list[ConsoleMessage]
+
+
+class PlaygroundConversationCreate(BaseModel):
+    lead_name: str | None = None
+
+
+class PlaygroundMessageCreate(BaseModel):
+    conversation_id: str
+    message: str

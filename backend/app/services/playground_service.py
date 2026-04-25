@@ -4,19 +4,15 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
-from openai import OpenAI
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.models.conversation import Conversation, Message
 from app.models.lead import Lead, LeadProfile
 from app.models.tenant import Tenant
+from app.runtime.runtime_service import process_inbound
 from app.runtime.strategies.mcmv_tenda_rj import MCMVTendaRJStrategy
-from app.services.lead_analysis_service import refresh_conversation_analysis
-from app.services.runtime_config_service import build_runtime_prompt, get_published_runtime_config
-
-settings = get_settings()
+from app.services.runtime_config_service import get_published_runtime_config
 
 
 def create_playground_conversation(db: Session, tenant_id: str, lead_name: str | None) -> Conversation:
@@ -68,90 +64,28 @@ def handle_playground_message(db: Session, tenant: Tenant, conversation_id: str,
     conversation.last_message_direction = "inbound"
     conversation.idle_started_at = now
 
-    db.add(
-        Message(
-            tenant_id=tenant.id,
-            conversation_id=conversation.id,
-            lead_id=lead.id,
-            direction="inbound",
-            message_type="text",
-            content_text=message,
-            raw_payload={"source": "playground"},
-            sent_by_ai=False,
-            delivery_status="received",
-        )
+    inbound = Message(
+        tenant_id=tenant.id,
+        conversation_id=conversation.id,
+        lead_id=lead.id,
+        direction="inbound",
+        message_type="text",
+        content_text=message,
+        raw_payload={"source": "playground"},
+        sent_by_ai=False,
+        delivery_status="received",
     )
+    db.add(inbound)
     db.add(lead)
     db.add(conversation)
-    db.commit()
+    db.flush()
 
-    assistant_text = generate_maju_response(db, conversation)
-    conversation.last_message_direction = "outbound"
-    lead.last_outbound_at = datetime.now(timezone.utc)
-
-    db.add(
-        Message(
-            tenant_id=tenant.id,
-            conversation_id=conversation.id,
-            lead_id=lead.id,
-            direction="outbound",
-            message_type="text",
-            content_text=assistant_text,
-            raw_payload={"source": "openai", "mode": "playground"},
-            sent_by_ai=True,
-            delivery_status="sent",
-        )
+    process_inbound(
+        db,
+        conversation=conversation,
+        inbound_message=inbound,
+        source_label="playground",
     )
-    refresh_conversation_analysis(db, conversation)
-    db.add(lead)
-    db.add(conversation)
     db.commit()
     db.refresh(conversation)
     return conversation
-
-
-def generate_maju_response(db: Session, conversation: Conversation) -> str:
-    if not settings.openai_api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="OPENAI_API_KEY nao configurada no backend.",
-        )
-
-    messages = db.scalars(
-        select(Message)
-        .where(Message.conversation_id == conversation.id)
-        .order_by(Message.created_at.asc())
-    ).all()
-    input_messages = [
-        {
-            "role": "user" if message.direction == "inbound" else "assistant",
-            "content": message.content_text or "",
-        }
-        for message in messages
-        if message.content_text
-    ]
-
-    runtime_config = (
-        conversation.runtime_config_version
-        if conversation.runtime_config_version is not None
-        else get_published_runtime_config(db, conversation.tenant_id)
-    )
-    client = OpenAI(api_key=settings.openai_api_key)
-    response = client.responses.create(
-        model=runtime_config.agent_config.model or settings.openai_model,
-        instructions=build_runtime_prompt(db, runtime_config),
-        input=input_messages,
-        max_output_tokens=runtime_config.agent_config.max_tokens,
-    )
-
-    output_text = getattr(response, "output_text", None)
-    if output_text:
-        return output_text.strip()
-
-    for item in getattr(response, "output", []) or []:
-        for content in getattr(item, "content", []) or []:
-            text = getattr(content, "text", None)
-            if text:
-                return text.strip()
-
-    return "Consegui te acompanhar por aqui. Pode me mandar mais uma mensagem pra eu continuar?"

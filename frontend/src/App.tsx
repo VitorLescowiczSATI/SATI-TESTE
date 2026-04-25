@@ -3,9 +3,8 @@ import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./features/auth/LoginPage";
 import { useSession } from "./features/auth/useSession";
 import { DashboardPage } from "./pages/DashboardPage";
-import { AdminPage } from "./pages/AdminPage";
 import { HomePage } from "./pages/HomePage";
-import { InboxPage } from "./pages/InboxPage";
+import { PlaygroundPage } from "./pages/PlaygroundPage";
 import type { AppViewKey } from "./types";
 
 const PAGE_META: Record<AppViewKey, { title: string; subtitle: string }> = {
@@ -15,11 +14,7 @@ const PAGE_META: Record<AppViewKey, { title: string; subtitle: string }> = {
   },
   playground: {
     title: "Playground",
-    subtitle: "Ambiente de teste para acompanhar mensagens reais e validar a Maju.",
-  },
-  admin: {
-    title: "Admin",
-    subtitle: "Configuracao do workspace, leads, classificacao e preview Facilita.",
+    subtitle: "Ambiente de teste com chat, perfil do lead e function calls em tempo real.",
   },
 };
 
@@ -35,9 +30,7 @@ function App() {
       case "dashboard":
         return <DashboardPage session={session} onOpenPlayground={() => setActiveView("playground")} />;
       case "playground":
-        return <InboxPage />;
-      case "admin":
-        return <AdminPage />;
+        return <PlaygroundPage />;
       default:
         return null;
     }

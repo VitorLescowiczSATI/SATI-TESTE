@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -10,6 +11,11 @@ from sqlalchemy.orm import Session
 from app.models.conversation import Conversation, Message
 from app.models.lead import Lead, LeadProfile
 from app.models.tenant import Tenant
+from app.runtime.actions import whatsapp_cloud_adapter
+from app.runtime.runtime_service import process_inbound
+from app.services.runtime_config_service import get_published_runtime_config
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -51,26 +57,79 @@ def process_whatsapp_webhook(db: Session, tenant: Tenant, payload: dict[str, Any
         conversation.last_message_direction = "inbound"
         conversation.idle_started_at = now
 
-        db.add(
-            Message(
-                tenant_id=tenant.id,
-                conversation_id=conversation.id,
-                lead_id=lead.id,
-                direction="inbound",
-                message_type=item.message_type,
-                provider_message_id=item.provider_message_id,
-                content_text=item.content_text,
-                raw_payload=item.raw_payload,
-                sent_by_ai=False,
-                delivery_status="received",
-            )
+        inbound = Message(
+            tenant_id=tenant.id,
+            conversation_id=conversation.id,
+            lead_id=lead.id,
+            direction="inbound",
+            message_type=item.message_type,
+            provider_message_id=item.provider_message_id,
+            content_text=item.content_text,
+            raw_payload=item.raw_payload,
+            sent_by_ai=False,
+            delivery_status="received",
         )
+        db.add(inbound)
         db.add(lead)
         db.add(conversation)
+        db.flush()
+
+        # Apenas mensagens de texto/botao com conteudo entram no LLM por
+        # agora. Outros tipos (imagem, audio) ficam como recebidos e nao
+        # disparam resposta automatica.
+        if item.content_text:
+            try:
+                runtime_response = process_inbound(
+                    db,
+                    conversation=conversation,
+                    inbound_message=inbound,
+                    source_label="whatsapp",
+                )
+                _dispatch_outbound(db, conversation=conversation, lead=lead, text=runtime_response.assistant_text)
+            except Exception:  # noqa: BLE001
+                logger.exception("Falha gerando resposta para WhatsApp inbound")
+
         processed += 1
 
     db.commit()
     return IntakeResult(processed=processed, ignored=ignored)
+
+
+def _dispatch_outbound(
+    db: Session,
+    *,
+    conversation: Conversation,
+    lead: Lead,
+    text: str,
+) -> None:
+    """Pega a ultima Message outbound textual recem-criada e tenta envia-la."""
+    outbound = db.scalar(
+        select(Message)
+        .where(
+            Message.conversation_id == conversation.id,
+            Message.direction == "outbound",
+            Message.message_type == "text",
+        )
+        .order_by(Message.created_at.desc())
+        .limit(1)
+    )
+    if outbound is None:
+        return
+
+    result = whatsapp_cloud_adapter.send_text(lead.phone, text)
+    outbound.delivery_status = result.status
+    if result.provider_message_id:
+        outbound.provider_message_id = result.provider_message_id
+    if result.error:
+        raw = dict(outbound.raw_payload or {})
+        raw["delivery_error"] = result.error
+        outbound.raw_payload = raw
+    db.add(outbound)
+
+
+def ensure_runtime_config(db: Session, tenant_id: str) -> None:
+    """Garante que ha runtime config publicada antes de despachar inbound."""
+    get_published_runtime_config(db, tenant_id)
 
 
 @dataclass(frozen=True)

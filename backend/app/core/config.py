@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     seed_admin_password: str | None = None
     whatsapp_verify_token: str | None = None
     whatsapp_default_tenant_slug: str = "tenda-rj"
+    whatsapp_phone_number_id: str | None = None
+    whatsapp_access_token: str | None = None
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
 

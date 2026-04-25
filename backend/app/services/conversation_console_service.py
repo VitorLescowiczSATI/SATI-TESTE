@@ -8,6 +8,7 @@ from app.schemas.conversation import (
     ConsoleConversationDetail,
     ConsoleConversationSummary,
     ConsoleLead,
+    ConsoleLeadProfile,
     ConsoleMessage,
 )
 
@@ -43,11 +44,26 @@ def get_conversation_detail(db: Session, tenant_id: str, conversation_id: str) -
     ).all()
 
     summary = serialize_summary(db, conversation)
+    profile = conversation.lead.profile
     return ConsoleConversationDetail(
         **summary.model_dump(),
         messages=[serialize_message(message) for message in messages],
         summary_text=conversation.summary_text,
         classified_at=conversation.classified_at,
+        lead_profile=ConsoleLeadProfile(
+            proof_of_income_type=profile.proof_of_income_type if profile else None,
+            uses_fgts=profile.uses_fgts if profile else None,
+            family_income=profile.family_income if profile else None,
+            employment_history_months=profile.employment_history_months if profile else None,
+            marital_status=profile.marital_status if profile else None,
+            birth_date=profile.birth_date if profile else None,
+            dependents_summary=profile.dependents_summary if profile else None,
+            interest_project=profile.interest_project if profile else None,
+            interest_region=profile.interest_region if profile else None,
+            schedule_date_raw=profile.schedule_date_raw if profile else None,
+            schedule_time_raw=profile.schedule_time_raw if profile else None,
+            scheduled_at=profile.scheduled_at if profile else None,
+        ) if profile is not None else None,
     )
 
 
@@ -70,6 +86,7 @@ def serialize_summary(db: Session, conversation: Conversation) -> ConsoleConvers
             phone=conversation.lead.phone,
             status=conversation.lead.status,
             classification=conversation.lead.classification,
+            classification_reason=conversation.lead.classification_reason,
             source_campaign=conversation.lead.source_campaign,
         ),
         runtime_state=conversation.runtime_state,
@@ -89,6 +106,8 @@ def serialize_message(message: Message) -> ConsoleMessage:
         content_text=message.content_text,
         sent_by_ai=message.sent_by_ai,
         tool_name=message.tool_name,
+        tool_payload=message.tool_payload,
+        tool_result_text=message.tool_result_text,
         delivery_status=message.delivery_status,
         created_at=message.created_at,
     )

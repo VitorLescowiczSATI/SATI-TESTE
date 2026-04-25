@@ -6,7 +6,23 @@ export type ConsoleLead = {
   phone: string;
   status: string;
   classification: string | null;
+  classification_reason: string | null;
   source_campaign: string | null;
+};
+
+export type ConsoleLeadProfile = {
+  proof_of_income_type: string | null;
+  uses_fgts: boolean | null;
+  family_income: number | null;
+  employment_history_months: number | null;
+  marital_status: string | null;
+  birth_date: string | null;
+  dependents_summary: string | null;
+  interest_project: string | null;
+  interest_region: string | null;
+  schedule_date_raw: string | null;
+  schedule_time_raw: string | null;
+  scheduled_at: string | null;
 };
 
 export type ConsoleConversationSummary = {
@@ -27,6 +43,8 @@ export type ConsoleMessage = {
   content_text: string | null;
   sent_by_ai: boolean;
   tool_name: string | null;
+  tool_payload: Record<string, unknown> | null;
+  tool_result_text: string | null;
   delivery_status: string | null;
   created_at: string;
 };
@@ -35,6 +53,7 @@ export type ConsoleConversationDetail = ConsoleConversationSummary & {
   messages: ConsoleMessage[];
   summary_text: string | null;
   classified_at: string | null;
+  lead_profile: ConsoleLeadProfile | null;
 };
 
 export function listActiveConversations() {

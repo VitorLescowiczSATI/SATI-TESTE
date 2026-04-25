@@ -970,6 +970,32 @@
   gap: 18px;
 }
 
+.playground-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.4fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.playground-chat {
+  display: flex;
+  flex-direction: column;
+}
+
+.playground-side {
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+}
+
+.bubble.tool {
+  background: var(--bg-soft, #f6f7fb);
+  border: 1px dashed var(--border);
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+}
+
 .conversation-list {
   display: grid;
   gap: 10px;
@@ -1059,8 +1085,14 @@
   .auth-layout,
   .dashboard-grid,
   .signal-grid,
-  .inbox-layout {
+  .inbox-layout,
+  .playground-layout {
     grid-template-columns: 1fr;
+  }
+
+  .playground-side {
+    position: static;
+    max-height: none;
   }
 
   .auth-card {

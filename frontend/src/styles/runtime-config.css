@@ -1369,6 +1369,93 @@
   flex: none;
 }
 
+/* ---- Distribution bars (Dashboard) ---- */
+.dist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.dist-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.dist-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.dist-row-value {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dist-row-percent {
+  color: var(--text-tertiary);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-sm);
+}
+
+.dist-bar {
+  height: 6px;
+  background: var(--ink-75);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.dist-bar-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.badge-class--scheduled-fill { background: var(--status-scheduled); }
+.badge-class--hot-fill       { background: var(--status-hot); }
+.badge-class--warm-fill      { background: var(--status-warm); }
+.badge-class--cold-fill      { background: var(--status-cold); }
+.badge-class--neutral-fill   { background: var(--ink-300); }
+
+/* ---- Tool stat list ---- */
+.tool-stat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.tool-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ink-25);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+}
+
+.tool-stat-name {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--brand-700);
+  font-weight: var(--fw-semibold);
+}
+
+.tool-stat-count {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 .conversation-list {
   display: grid;
   gap: 10px;

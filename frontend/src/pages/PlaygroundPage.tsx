@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../components/Icons";
 import { SectionCard } from "../components/SectionCard";
 import {
   createPlaygroundConversation,
   getConversationDetail,
   listActiveConversations,
+  sendPlaygroundAudio,
   sendPlaygroundMessage,
   type ConsoleConversationDetail,
   type ConsoleConversationSummary,
@@ -21,6 +22,8 @@ export function PlaygroundPage() {
   const [sending, setSending] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
   const [error, setError] = useState("");
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void refreshConversations();
@@ -96,6 +99,28 @@ export function PlaygroundPage() {
     } finally {
       setSending(false);
     }
+  }
+
+  async function submitAudio(file: File) {
+    if (!selectedId) return;
+    const previousIds = new Set((selectedConversation?.messages ?? []).map((m) => m.id));
+    setUploadingAudio(true);
+    setError("");
+    try {
+      const conversation = await sendPlaygroundAudio(selectedId, file);
+      await revealConversationProgressively(conversation, previousIds, setSelectedConversation);
+      await refreshConversations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel enviar o audio.");
+    } finally {
+      setUploadingAudio(false);
+      if (audioInputRef.current) audioInputRef.current.value = "";
+    }
+  }
+
+  function onAudioPicked(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void submitAudio(file);
   }
 
   const toolCalls = useMemo<ConsoleMessage[]>(
@@ -206,11 +231,18 @@ export function PlaygroundPage() {
                     </div>
                   );
                 }
+                const sideClass = message.sent_by_ai ? "ai" : message.direction === "inbound" ? "in" : "out";
+                if (message.message_type === "audio") {
+                  return (
+                    <div key={message.id} className={`bubble ${sideClass} audio`}>
+                      <span className="tag audio-tag">audio do lead</span>
+                      <span className="audio-transcript">{message.content_text || "(transcricao vazia)"}</span>
+                      <span className="time">{formatTime(message.created_at)}</span>
+                    </div>
+                  );
+                }
                 return (
-                  <div
-                    key={message.id}
-                    className={`bubble ${message.sent_by_ai ? "ai" : message.direction === "inbound" ? "in" : "out"}`}
-                  >
+                  <div key={message.id} className={`bubble ${sideClass}`}>
                     {message.sent_by_ai ? <span className="tag">Maju</span> : null}
                     {message.content_text || labelMessageType(message.message_type)}
                     <span className="time">{formatTime(message.created_at)}</span>
@@ -236,12 +268,28 @@ export function PlaygroundPage() {
                   ? "Digite como se voce fosse o lead..."
                   : "Crie um lead de teste pra comecar"
               }
-              disabled={!selectedConversation || sending}
+              disabled={!selectedConversation || sending || uploadingAudio}
             />
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*"
+              style={{ display: "none" }}
+              onChange={onAudioPicked}
+            />
+            <button
+              type="button"
+              className="btn btn--secondary"
+              onClick={() => audioInputRef.current?.click()}
+              disabled={!selectedConversation || sending || uploadingAudio}
+              title="Enviar audio (igual o lead mandaria no WhatsApp)"
+            >
+              {uploadingAudio ? "Transcrevendo..." : "Audio"}
+            </button>
             <button
               type="submit"
               className="btn btn--primary"
-              disabled={!selectedConversation || sending || !draftMessage.trim()}
+              disabled={!selectedConversation || sending || uploadingAudio || !draftMessage.trim()}
             >
               {sending ? "Enviando..." : "Enviar"}
             </button>

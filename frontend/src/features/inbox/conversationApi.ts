@@ -1,4 +1,4 @@
-import { apiRequest } from "../../lib/apiClient";
+import { apiRequest, apiUpload } from "../../lib/apiClient";
 
 export type ConsoleLead = {
   id: string;
@@ -79,4 +79,11 @@ export function sendPlaygroundMessage(conversationId: string, message: string) {
       message,
     },
   });
+}
+
+export function sendPlaygroundAudio(conversationId: string, file: File) {
+  const formData = new FormData();
+  formData.append("conversation_id", conversationId);
+  formData.append("audio", file, file.name || "audio.webm");
+  return apiUpload<ConsoleConversationDetail>("/playground/audio", formData);
 }

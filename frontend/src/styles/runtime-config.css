@@ -1013,6 +1013,31 @@
   margin: 0;
 }
 
+.bubble.audio .audio-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  font-weight: var(--fw-bold);
+  color: var(--brand-700);
+  margin-bottom: 4px;
+}
+
+.bubble.audio .audio-tag::before {
+  content: "🎤";
+  font-size: 11px;
+}
+
+.bubble.audio .audio-transcript {
+  display: block;
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
 .bubble.tool {
   align-self: stretch;
   background: var(--ink-25);

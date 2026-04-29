@@ -15,9 +15,11 @@ from app.models.conversation import Conversation, Message
 from app.models.lead import Lead, LeadProfile
 from app.models.tenant import Tenant
 from app.runtime.actions import whatsapp_cloud_adapter
+from app.runtime.actions.whatsapp_media import download_media
 from app.runtime.debounce import schedule_debounced
 from app.runtime.runtime_service import process_inbound
 from app.runtime.strategies.mcmv_tenda_rj import MCMVTendaRJStrategy
+from app.services.audio_transcription_service import transcribe as transcribe_audio
 from app.services.runtime_config_service import get_published_runtime_config
 
 logger = logging.getLogger(__name__)
@@ -44,6 +46,22 @@ def process_whatsapp_webhook(db: Session, tenant: Tenant, payload: dict[str, Any
     conversations_to_process: dict[str, str] = {}  # conv_id -> tenant_id
 
     for item in iter_inbound_messages(payload):
+        # Audio: baixar binario, transcrever via Whisper e tratar como texto.
+        if item.message_type == "audio" and item.audio_media_id and not item.content_text:
+            try:
+                media = download_media(item.audio_media_id)
+            except Exception:  # noqa: BLE001
+                logger.exception("Erro baixando audio %s", item.audio_media_id)
+                media = None
+            if media is not None:
+                try:
+                    transcript = transcribe_audio(media.content, filename=media.filename)
+                except Exception:  # noqa: BLE001
+                    logger.exception("Erro transcrevendo audio %s", item.audio_media_id)
+                    transcript = ""
+                if transcript:
+                    item = item.with_transcript(transcript)
+
         if item.provider_message_id:
             existing_message = db.scalar(
                 select(Message).where(
@@ -215,6 +233,20 @@ class InboundWhatsAppMessage:
     message_type: str
     content_text: str | None
     raw_payload: dict[str, Any]
+    audio_media_id: str | None = None
+
+    def with_transcript(self, transcript: str) -> "InboundWhatsAppMessage":
+        new_raw = dict(self.raw_payload)
+        new_raw["audio_transcript"] = transcript
+        return InboundWhatsAppMessage(
+            provider_message_id=self.provider_message_id,
+            from_phone=self.from_phone,
+            profile_name=self.profile_name,
+            message_type=self.message_type,
+            content_text=transcript,
+            raw_payload=new_raw,
+            audio_media_id=self.audio_media_id,
+        )
 
 
 def iter_inbound_messages(payload: dict[str, Any]) -> list[InboundWhatsAppMessage]:
@@ -235,6 +267,12 @@ def iter_inbound_messages(payload: dict[str, Any]) -> list[InboundWhatsAppMessag
                     continue
 
                 message_type = raw_message.get("type", "unknown")
+                audio_media_id = None
+                if message_type == "audio":
+                    audio_media_id = raw_message.get("audio", {}).get("id")
+                elif message_type == "voice":  # alguns clientes diferenciam
+                    audio_media_id = raw_message.get("voice", {}).get("id")
+
                 messages.append(
                     InboundWhatsAppMessage(
                         provider_message_id=raw_message.get("id"),
@@ -249,6 +287,7 @@ def iter_inbound_messages(payload: dict[str, Any]) -> list[InboundWhatsAppMessag
                             "contact_name": contacts.get(from_phone),
                             "message": raw_message,
                         },
+                        audio_media_id=audio_media_id,
                     )
                 )
 

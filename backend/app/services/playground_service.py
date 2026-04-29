@@ -46,6 +46,52 @@ def create_playground_conversation(db: Session, tenant_id: str, lead_name: str |
 
 
 def handle_playground_message(db: Session, tenant: Tenant, conversation_id: str, message: str) -> Conversation:
+    return _handle_inbound(
+        db,
+        tenant=tenant,
+        conversation_id=conversation_id,
+        content_text=message,
+        message_type="text",
+        raw_payload={"source": "playground"},
+    )
+
+
+def handle_playground_audio(
+    db: Session,
+    tenant: Tenant,
+    conversation_id: str,
+    *,
+    transcript: str,
+    audio_filename: str | None,
+    audio_size_bytes: int,
+    mime_type: str | None,
+) -> Conversation:
+    return _handle_inbound(
+        db,
+        tenant=tenant,
+        conversation_id=conversation_id,
+        content_text=transcript,
+        message_type="audio",
+        raw_payload={
+            "source": "playground",
+            "input_kind": "audio",
+            "audio_transcript": transcript,
+            "audio_filename": audio_filename,
+            "audio_size_bytes": audio_size_bytes,
+            "mime_type": mime_type,
+        },
+    )
+
+
+def _handle_inbound(
+    db: Session,
+    *,
+    tenant: Tenant,
+    conversation_id: str,
+    content_text: str,
+    message_type: str,
+    raw_payload: dict,
+) -> Conversation:
     conversation = db.scalar(
         select(Conversation).where(
             Conversation.id == conversation_id,
@@ -69,9 +115,9 @@ def handle_playground_message(db: Session, tenant: Tenant, conversation_id: str,
         conversation_id=conversation.id,
         lead_id=lead.id,
         direction="inbound",
-        message_type="text",
-        content_text=message,
-        raw_payload={"source": "playground"},
+        message_type=message_type,
+        content_text=content_text,
+        raw_payload=raw_payload,
         sent_by_ai=False,
         delivery_status="received",
     )

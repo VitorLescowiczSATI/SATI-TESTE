@@ -22,8 +22,10 @@ export function PlaygroundPage() {
   const [sending, setSending] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
   const [error, setError] = useState("");
-  const [uploadingAudio, setUploadingAudio] = useState(false);
-  const audioInputRef = useRef<HTMLInputElement>(null);
+  const [audioState, setAudioState] = useState<"idle" | "recording" | "uploading">("idle");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     void refreshConversations();
@@ -101,11 +103,61 @@ export function PlaygroundPage() {
     }
   }
 
-  async function submitAudio(file: File) {
-    if (!selectedId) return;
-    const previousIds = new Set((selectedConversation?.messages ?? []).map((m) => m.id));
-    setUploadingAudio(true);
+  async function startRecording() {
+    if (!selectedId || audioState !== "idle") return;
     setError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+      const mimeType = pickAudioMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        void uploadRecordedAudio(recorder.mimeType || "audio/webm");
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setAudioState("recording");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Permissao de microfone negada.");
+      stopMicStream();
+    }
+  }
+
+  function stopRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state !== "recording") return;
+    recorder.stop();
+    setAudioState("uploading");
+  }
+
+  function stopMicStream() {
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioStreamRef.current = null;
+  }
+
+  async function uploadRecordedAudio(mimeType: string) {
+    if (!selectedId) {
+      stopMicStream();
+      setAudioState("idle");
+      return;
+    }
+    const blob = new Blob(audioChunksRef.current, { type: mimeType });
+    audioChunksRef.current = [];
+    stopMicStream();
+
+    if (blob.size < 1000) {
+      // < 1KB = audio vazio/cancelado
+      setAudioState("idle");
+      return;
+    }
+
+    const previousIds = new Set((selectedConversation?.messages ?? []).map((m) => m.id));
+    const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "mp4" : "webm";
+    const file = new File([blob], `playground-${Date.now()}.${ext}`, { type: mimeType });
     try {
       const conversation = await sendPlaygroundAudio(selectedId, file);
       await revealConversationProgressively(conversation, previousIds, setSelectedConversation);
@@ -113,15 +165,13 @@ export function PlaygroundPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nao foi possivel enviar o audio.");
     } finally {
-      setUploadingAudio(false);
-      if (audioInputRef.current) audioInputRef.current.value = "";
+      setAudioState("idle");
     }
   }
 
-  function onAudioPicked(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) void submitAudio(file);
-  }
+  useEffect(() => {
+    return () => stopMicStream();
+  }, []);
 
   const toolCalls = useMemo<ConsoleMessage[]>(
     () => (selectedConversation?.messages ?? []).filter((message) => message.tool_name),
@@ -264,32 +314,35 @@ export function PlaygroundPage() {
               value={draftMessage}
               onChange={(event) => setDraftMessage(event.target.value)}
               placeholder={
-                selectedConversation
-                  ? "Digite como se voce fosse o lead..."
-                  : "Crie um lead de teste pra comecar"
+                audioState === "recording"
+                  ? "Gravando audio... clique no botao pra parar"
+                  : audioState === "uploading"
+                    ? "Transcrevendo audio..."
+                    : selectedConversation
+                      ? "Digite ou clique no microfone..."
+                      : "Crie um lead de teste pra comecar"
               }
-              disabled={!selectedConversation || sending || uploadingAudio}
-            />
-            <input
-              ref={audioInputRef}
-              type="file"
-              accept="audio/*"
-              style={{ display: "none" }}
-              onChange={onAudioPicked}
+              disabled={!selectedConversation || sending || audioState !== "idle"}
             />
             <button
               type="button"
-              className="btn btn--secondary"
-              onClick={() => audioInputRef.current?.click()}
-              disabled={!selectedConversation || sending || uploadingAudio}
-              title="Enviar audio (igual o lead mandaria no WhatsApp)"
+              className={`btn btn--mic ${audioState === "recording" ? "is-recording" : ""}`}
+              onClick={() => (audioState === "recording" ? stopRecording() : void startRecording())}
+              disabled={!selectedConversation || sending || audioState === "uploading"}
+              title={
+                audioState === "recording"
+                  ? "Parar e enviar audio"
+                  : audioState === "uploading"
+                    ? "Transcrevendo audio..."
+                    : "Gravar audio (como o lead faria no WhatsApp)"
+              }
             >
-              {uploadingAudio ? "Transcrevendo..." : "Audio"}
+              {audioState === "recording" ? "■ Parar" : audioState === "uploading" ? "..." : "🎤"}
             </button>
             <button
               type="submit"
               className="btn btn--primary"
-              disabled={!selectedConversation || sending || uploadingAudio || !draftMessage.trim()}
+              disabled={!selectedConversation || sending || audioState !== "idle" || !draftMessage.trim()}
             >
               {sending ? "Enviando..." : "Enviar"}
             </button>
@@ -379,6 +432,20 @@ function ProfileGrid({ profile }: { profile: ConsoleLeadProfile | null }) {
       ))}
     </dl>
   );
+}
+
+function pickAudioMimeType(): string | undefined {
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/ogg;codecs=opus",
+    "audio/mp4",
+  ];
+  if (typeof MediaRecorder === "undefined") return undefined;
+  for (const type of candidates) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return undefined;
 }
 
 const CHUNK_REVEAL_DELAY_MS = 1200;
